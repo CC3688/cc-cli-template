@@ -1,5 +1,29 @@
-# cc-cli-template
+# vue3-element-admin-ts
 
-cc-cli-template
+## Project setup
+```
+npm install
+```
 
-## 模板在各分支下, 请勿合并分支
+### Compiles and hot-reloads for development
+```
+npm run serve
+```
+
+### Compiles and minifies for production
+```
+npm run build
+```
+
+### Run your unit tests
+```
+npm run test:unit
+```
+
+### Lints and fixes files
+```
+npm run lint
+```
+
+### Customize configuration
+See [Configuration Reference](https://cli.vuejs.org/config/).
