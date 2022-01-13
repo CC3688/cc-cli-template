@@ -2,23 +2,49 @@
 export default { name: 'CompassList' }
 </script>
 <script setup lang="ts">
-import { reactive, ref } from 'vue'
 import { getPost } from '@/api/compass'
 import { IPost, IPostParams } from '@/interfaces/compass'
+import { useTable, IFormateParmas } from '@/hooks/useTable'
+import { useExport } from '@/hooks/useExport'
 
-const queryForm = reactive({
-  id: null,
-  author: '',
-  title: '',
+interface IQueryForm {
+  id: number | null
+  author: string
+  title: string
+}
+
+interface IData {
+  id: number
+  title: string
+  author: string
+}
+
+function formateFn({ queryForm, pageInfo }: IFormateParmas<IQueryForm>) {
+  const params: IPostParams = {
+    _page: pageInfo.pageNum,
+    _limit: pageInfo.pageSize,
+  }
+  if (queryForm.id) params.id = queryForm.id
+  if (queryForm.author) params.author = queryForm.author
+  if (queryForm.title) params.title = queryForm.title
+  return params
+}
+
+const { tableData, queryForm, pageInfo, search, loadData } = useTable<
+  IQueryForm,
+  IData
+>({
+  api: getPost,
+  queryForm: { id: null, author: '', title: '' },
+  formate: formateFn,
 })
 
-const pageInfo = reactive({
-  total: 0,
-  pageNum: 1,
-  pageSize: 10,
+const exportData = useExport<IQueryForm>({
+  api: getPost,
+  queryForm: queryForm,
+  fileName: '下载文件',
 })
 
-const tableData = ref()
 const columnData = [
   {
     prop: 'id',
@@ -47,32 +73,11 @@ const columnData = [
   },
 ]
 
-const loadData = () => {
-  getAllPost()
-}
-const getAllPost = async () => {
-  const params: IPostParams = {
-    _page: pageInfo.pageNum,
-    _limit: pageInfo.pageSize,
-  }
-  if (queryForm.id) params.id = queryForm.id
-  if (queryForm.author) params.author = queryForm.author
-  if (queryForm.title) params.title = queryForm.title
-  const posts = await getPost<IPost[]>(params)
-
-  tableData.value = posts
-  pageInfo.total = 25
-}
-
-const onSubmit = () => {
-  getAllPost()
-}
-
 const detail = (row: IPost) => {
   console.log(`row: ${row.id} - ${row.title} - ${row.author}`)
 }
 
-getAllPost()
+// getAllPost()
 </script>
 
 <template>
@@ -81,7 +86,7 @@ getAllPost()
       :inline="true"
       :model="queryForm"
       class="my-query-form"
-      @keyup.enter="onSubmit"
+      @keyup.enter="search"
     >
       <el-form-item label="id">
         <el-input
@@ -105,7 +110,8 @@ getAllPost()
         ></el-input>
       </el-form-item>
       <el-form-item>
-        <el-button type="primary" @click="onSubmit">Query</el-button>
+        <el-button type="primary" @click="search">Query</el-button>
+        <el-button type="primary" @click="exportData">download</el-button>
       </el-form-item>
     </el-form>
     <my-table :data="tableData" :column-data="columnData">
