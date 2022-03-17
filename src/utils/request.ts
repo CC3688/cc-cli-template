@@ -174,15 +174,17 @@ service.interceptors.response.use(
  *
  */
 
-// interface Base<T> {
-//   data: T
-//   meta: {
-//     status: number
-//     msg: string
-//   }
-// }
+interface Base<T> {
+  data: T
+  meta: {
+    status: number
+    msg: string
+  }
+}
 
-async function http<T>(config: AxiosRequestConfig): Promise<T> {
+async function http<T>(
+  config: AxiosRequestConfig
+): Promise<{ err: Error | null; val: Base<T> | null }> {
   const key = getKey(config)
   // 默认不添加cache  cache: true 缓存   false 不缓存
   if (Reflect.has(config, 'cache') && config.cache) {
@@ -192,7 +194,10 @@ async function http<T>(config: AxiosRequestConfig): Promise<T> {
       !isExpires(cacheResult[key].timestamp)
     ) {
       closeLoading()
-      return Promise.resolve(cacheResult[key].data.data)
+      return Promise.resolve(cacheResult[key].data.data).then(
+        (val) => ({ err: null, val }),
+        (err) => ({ err, val: null })
+      )
     } else {
       cacheResult[key] = null
     }
@@ -213,12 +218,19 @@ async function http<T>(config: AxiosRequestConfig): Promise<T> {
         new Error(
           'axios 封装了防止重复请求, 如果需要重复请求,请添加repeat: true'
         )
+      ).then(
+        (val) => ({ err: null, val }),
+        (err) => ({ err, val: null })
       )
     }
     requestQueue.push(key)
   }
-  const res = await service.request<T>(config)
-  return Promise.resolve(res.data)
+  const [err, val] = await service.request<T>(config).then(
+    (val) => [null, val],
+    (err) => [err, null]
+  )
+  // return Promise.resolve(res.data)
+  return { err, val }
 }
 
 export default http
